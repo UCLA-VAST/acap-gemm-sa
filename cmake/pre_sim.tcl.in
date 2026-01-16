@@ -1,0 +1,9 @@
+remove_wave -of [get_wave_config] [get_waves -of [get_wave_config] -regexp ".*"]
+set scope_path "/design_1_wrapper_sim_wrapper/design_1_wrapper_i/design_1_i"
+
+set PL [add_wave_group PL]
+add_wave -into $PL [get_objects -r $scope_path/VitisRegion/@_pl_sim_name@/* -filter {type==proto_inst}]
+
+#set AIE [add_wave_group AIE]
+#add_wave -into $AIE [get_objects -r $scope_path/VitisRegion/ai_engine_0/* -filter {type==proto_inst}]
+

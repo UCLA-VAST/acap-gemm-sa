@@ -1,0 +1,12 @@
+*.sw*
+*.vim
+OUT*
+*.batch
+*.log
+*.sol
+
+/build*/
+/archive/
+
+__pycache__/
+data/

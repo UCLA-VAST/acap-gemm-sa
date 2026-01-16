@@ -1,0 +1,17 @@
+part=@XILINX_PART@
+
+[hls]
+flow_target=vitis
+syn.file=@ARGS_PL_SOURCE@
+syn.file_cflags=@ARGS_PL_SOURCE@,-I@CMAKE_CURRENT_SOURCE_DIR@ -DXILINX_TARGET_IS_@XILINX_TARGET_UPPER@
+syn.top=@_pl_name@
+syn.output.format=xo
+syn.output.file=@_xo@
+#syn.array_partition.throughput_driven=auto
+syn.interface.m_axi_auto_max_ports=true
+syn.interface.m_axi_buffer_impl=lutram
+#syn.interface.m_axi_max_read_burst_length=1
+#syn.interface.m_axi_num_read_outstanding=1
+#syn.interface.m_axi_max_write_burst_length=1
+#syn.interface.m_axi_num_write_outstanding=1
+@_hls_cfg_clock@
