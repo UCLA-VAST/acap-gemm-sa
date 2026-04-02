@@ -13,10 +13,10 @@ A systolic array-based GEMM implementation for AMD Versal ACAP.
 
 ## Build and Run
 
-Files to edit in `$SRC_DIR`:
+Files to edit in a `$SRC_DIR`:
 - `parameters.hh`: Set design configuration
 - `xsa.cfg`: Comment/uncomment connectivity based on array dimensions
-- `gemm.hh`: Comment/uncomment inlining for AIE simulation
+- `gemm.hh`: Comment/uncomment inlining for AIE simulation profiling
 - `CMakeLists.txt`: Set desired frequency
 
 ```console
@@ -28,14 +28,18 @@ make -j [VERBOSE=1] gemm
 
 ## Run AIE Simulation
 
-Generate data:
+To generate simulation data, run the following script:
 
 ```console
 cd $SRC_DIR
 ./generate_gemm_data.py [--help] -d <PM,PK,PN> -t <AM,AK,AN> -a <R,C>
 ```
 
-Run simulation:
+Currently, this script only supports a single PL tile, so set `(M, K, N) = (PL_M, PL_K, PL_N)` in `parameters.hh`.
+`DEF_PARTS` has no effect on simulation behavior, but needs to pass static asserts w.r.t. systolic array dimensions.
+`xsa.cfg` does not need to be updated for simulation.
+
+To run the simulation:
 
 ```console
 cd $BUILD_DIR
@@ -89,7 +93,8 @@ For each method, use the corresponding `src*` directory and `gemm*-aiesim` targe
 ```console
 # Estimated Time: ~4 hours
 cd ../src-trad
-vim parameters.hh # apply config
+vim parameters.hh # DT=int32_t, M=1024, K=512, N=800, PL_M=1024, PL_K=512, PL_N=800, AIE_M=16, AIE_K=64, AIE_N=16,
+                  # DEF_AIE_ROWS=8, DEF_AIE_COLS=50, DEF_PARTS=2
 ./generate_gemm_data.py -d 1024,512,800 -t 16,64,16 -a 8,50 --identity
 vim gemm.hh # apply (uncomment) `noinline` for ONLY `impl`
 cd ../build
