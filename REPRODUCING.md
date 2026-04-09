@@ -86,7 +86,7 @@ make -j VERBOSE=1 gemm-trad-aiesim
 We can calculate each of the reported values as follows:
 - VMAC: the last entry gives `131072/210846`, or $`62.2`$%.
 - Stall: the last entry gives `131072/175772`, or $`(210846 - 175772) / 210846 = 16.6`$%.
-- Zero: we search for the first `VST` block corresponding to line 92 in `src-trad/gemm.cc` 
+- Zero: we search for the first `VST` block corresponding to `src-trad/gemm.cc:92` 
   and count the `Exe-count` cycles.  The VLIW instruction looks like: `NOP; VST wr3, [p6], #32`.
   There are 32 lines of 8 cycles, or $`(32*8)/210846 = 0.1`$%.
 - Forward: in `src-trad/gemm.cc` we can see that we acquire `rin`, `rout`, `cin`, and `cout`,
@@ -94,11 +94,11 @@ We can calculate each of the reported values as follows:
   The following `VLD` and `VST` pipeline block corresponds to the row-wise forwarding of $A$,
   and contain cycle count values of $64$ (prologue/epilogue) and $448$ (core pipeline) for a total of $8640$ cycles.
   We find the next two `ACQ` instructions for `cin` and `cout` to locate the next pipeline block for col-wise forwarding of $B$.
-  Both cycle counts for $A$ and $B$ are the same in this case, so our percentage is $`(2*8640)/210846=8.2`$%.
+  Both cycle counts for $A$ and $B$ are the same, so our percentage is $`(2*8640)/210846=8.2`$%.
 - Flush: following the logic in `gemm.cc`, the next pipeline block corresponds to `compute` with VMAC instructions.
-  The `flush_step` occurs after this block and can be located by the next two `ACQ` instructions;
+  The `flush_step` function occurs after this block and can be located by the next two `ACQ` instructions;
   there are 39 lines of 21 cycles. 
-  The draining while-loop (find next two `ACQ`) has cycle counts of $0$ due to our flushing constraint $TK_2 \ge R$.
+  The draining while-loop (find next two `ACQ`) has cycle counts of $0$ due to our flushing constraint of $TK_2 \ge R$ being satisfied.
   The next single `ACQ` corresponds to writing the local buffer to `oout`; there are 40 lines of 8 cycles.
   The last two `ACQ` corresponds to the final drain at the end of execution; there are 39 lines of 3 cycles.
   The final calculation is: $`(39*21 + 40*8 + 39*3) / 210846 = 0.6`$%.
@@ -131,7 +131,7 @@ Use an initial configuration of:
 As `DEF_AIE_ROWS`/`DEF_AIE_COLS` increases, scale `M = PL_M`/`N = PL_N` by the same factor,
 e.g., for a `(6, 32)` SA, use `(128*6=768, 512, 16*32=512)`.
 
-Configurations:
+Configurations showing `(PL_M, PL_N)`; `PL_K` is fixed to `512`:
 | $R \backslash C$ | $1$ | $2$ | $4$ | $8$ | $16$ | $32$ | $50$ |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | $1$ | $(128, 16)$ | $(128, 32)$ | $(128, 64)$ | $(128, 128)$ | $(128, 256)$ | $(128, 512)$ | $(128, 800)$ |
@@ -140,7 +140,7 @@ Configurations:
 | $6$ | $(768, 16)$ | $(768, 32)$ | $(768, 64)$ | $(768, 128)$ | $(768, 256)$ | $(768, 512)$ | $(768, 800)$ |
 | $8$ | $(1024, 16)$ | $(1024, 32)$ | $(1024, 64)$ | $(1024, 128)$ | $(1024, 256)$ | $(1024, 512)$ | $(1024, 800)$ |
 
-Run simulations for all configurations, save each output as `<R>x<C>` in a clean directory,
+Run simulations for all configurations, save each output as `<R>x<C>` to the same, clean directory,
 and then collect average efficiencies.
 
 ```console
@@ -150,21 +150,21 @@ vim $TOP_DIR/scripts/plot_scaling.py # transfer averages to script
 $TOP_DIR/scripts/plot_scaling.py
 ```
 
-- `find` finds all `<R>x<C>` directories
-- `sort` sorts these by rows then columns
-- `paste` creates a comma-separated list for `heatmap.py`
+- `find` lists all `<R>x<C>` directories
+- `sort` groups names by sorted rows and columns
+- `paste` creates a comma-separated list for `heatmap.py` using the default `impl` section
 - `awk` extracts the first and third columns (cols: name, min, avg, max)
 
 ### Table IV
 
 Apply any of the configurations using `parameters.hh` and `xsa.cfg`,
 and examine ``src/work.hls/hls/syn/report/dma_csynth.rpt``.
-It is recommended to *use a different CMake _source_ directory for each configuration*
+It is recommended to **use a different CMake _source_ directory for each configuration**
 to avoid recompilation for later Tables and Figures.
 
 Configurations:
 - `DT = float`
-- `M = K = N` = "Size"
+- `M = K = N` = $Size$
 - `(PL_M, PL_K, PL_N)` = $(M_p, K_p, N_p)$
 - `(AIE_M, AIE_K, AIE_N)` = $(16, 64, 16)$
 - `(DEF_AIE_ROWS, DEF_AIE_COLS)` = $(R, C)$
