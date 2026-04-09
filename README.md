@@ -13,10 +13,10 @@ A systolic array-based GEMM implementation for AMD Versal ACAP.
 
 ## Build and Run
 
-Files to edit in `$SRC_DIR`:
+Files to edit in a `$SRC_DIR`:
 - `parameters.hh`: Set design configuration
 - `xsa.cfg`: Comment/uncomment connectivity based on array dimensions
-- `gemm.hh`: Comment/uncomment inlining for AIE simulation
+- `gemm.hh`: Comment/uncomment inlining for AIE simulation profiling
 - `CMakeLists.txt`: Set desired frequency
 
 ```console
@@ -28,14 +28,18 @@ make -j [VERBOSE=1] gemm
 
 ## Run AIE Simulation
 
-Generate data:
+To generate simulation data, run the following script:
 
 ```console
 cd $SRC_DIR
 ./generate_gemm_data.py [--help] -d <PM,PK,PN> -t <AM,AK,AN> -a <R,C>
 ```
 
-Run simulation:
+Currently, this script only supports a single PL tile, so set `(M, K, N) = (PL_M, PL_K, PL_N)` in `parameters.hh`.
+`DEF_PARTS` has no effect on simulation behavior, but needs to pass static asserts w.r.t. systolic array dimensions.
+`xsa.cfg` does not need to be updated for simulation.
+
+To run the simulation:
 
 ```console
 cd $BUILD_DIR
