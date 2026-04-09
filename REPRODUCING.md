@@ -39,6 +39,8 @@ make -j VERBOSE=1 gemm-aiesim
 ../scripts/parse_profile.py -f compute -i src/aiesimulator_output/profile_instr_0_0.txt | grep Efficiency
 ```
 
+Table III presents the reported `Efficiency`.
+
 ### Figure 6
 
 Same steps as with Table III, but with the parameters listed in the paper.
@@ -56,13 +58,14 @@ and save each `aiesimulator_output` directory as they will be used for Figure 7.
 - MCSA: `src`, `gemm-aiesim`, `impl`, `sim-mcsa`
 - Ideal MCSA: `src-ideal`, `gemm-ideal-aiesim`, `impl`, `sim-ideal`
 
-The `parse_profile.py` script locates the section for the user-specified function,
+The `parse_profile.py` script locates the section for the user-specified function
 and prints the `PC`, `Instruction`, `Assembly`, `Exe-count`, and `Cycles` columns
 while keeping track of VMAC instructions (marked by `x`),
 executed cycle count (given by `Exe-count`),
 and total cycle count including stalls (given by `Cycles`).
 These sections exist only for functions that have not been inlined.
 
+We calculate values for each category as follows:
 - VMAC: Reported cycles from `parse_profile.py` on `profile_instr_25_4.txt`
 - Stall: Total cycle difference from `parse_profile.py` using `--no-stalls`
 - Zero: Manually parsed `VST` pipeline block
@@ -83,9 +86,8 @@ make -j VERBOSE=1 gemm-trad-aiesim
 ../scripts/parse_profile.py -f impl -i src-trad/aiesimulator_output/profile_instr_25_4.txt
 ```
 
-We can calculate each of the reported values as follows:
 - VMAC: the last entry gives `131072/210846`, or $`62.2`$%.
-- Stall: the last entry gives `131072/175772`, or $`(210846 - 175772) / 210846 = 16.6`$%.
+- Stall: the last entry gives `131072/175772`, so $`(210846 - 175772) / 210846 = 16.6`$%.
 - Zero: we search for the first `VST` block corresponding to `src-trad/gemm.cc:92` 
   and count the `Exe-count` cycles.  The VLIW instruction looks like: `NOP; VST wr3, [p6], #32`.
   There are 32 lines of 8 cycles, or $`(32*8)/210846 = 0.1`$%.
@@ -102,7 +104,7 @@ We can calculate each of the reported values as follows:
   The next single `ACQ` corresponds to writing the local buffer to `oout`; there are 40 lines of 8 cycles.
   The last two `ACQ` corresponds to the final drain at the end of execution; there are 39 lines of 3 cycles.
   The final calculation is: $`(39*21 + 40*8 + 39*3) / 210846 = 0.6`$%.
-- Other: remaining cycle count/percentage.
+- Other: remaining cycle count/percentage, i.e., $`100 - 62.2 - 16.6 - 0.1 - 8.2 - 0.6 = 12.3`$%.
 
 ### Figure 7
 
@@ -152,7 +154,7 @@ $TOP_DIR/scripts/plot_scaling.py
 
 - `find` lists all `<R>x<C>` directories
 - `sort` groups names by sorted rows and columns
-- `paste` creates a comma-separated list for `heatmap.py` using the default `impl` section
+- `paste` creates a comma-separated list for `heatmap.py` using `impl` by default
 - `awk` extracts the first and third columns (cols: name, min, avg, max)
 
 ### Table IV
@@ -195,7 +197,6 @@ make -j VERBOSE=1 gemm
 ### Table VI
 
 Increase ``iters`` in ``host.cc`` to a very large value or make the loop infinite.
-(Can reuse builds from Table V.)
 
 ```console
 # Estimated Time: 3 minutes
@@ -212,6 +213,7 @@ Runs from Table V also output padded performance.
 
 - Baseline: reuse from Table V
 - 250 MHz: build and run after changing `src/CMakeLists.txt` to use `PL_FREQ_MHZ 250`
-- No DRAM: swap out commented lines in `load_A`, `load_B`, and `store_C` to avoid writing to the `dram_t *` in `dma.cc`
+- No DRAM: swap out commented lines in `load_A`, `load_B`, and `store_C` to avoid writing to the `dram_t *` in `dma.cc`.
+  For example, in `load_A`, swap `s.write(pl[idx]);` for `s.write(1);`.
 
 Transfer throughputs to `plot_misc.py` and run it.
