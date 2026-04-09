@@ -7,22 +7,22 @@ For simulations:
 - Related files: `parameters.hh`, `gemm.hh`
 - We only support single PL tile data generation and simulation,
   i.e., `(M, K, N) = (PL_M, PL_K, PL_N)`.
-  Otherwise, stalling behavior might be observed during simulation.
+  Otherwise, the simulation may stall.
 - The parameter `DEF_PARTS` determines how many NMUs the PL design uses per argument.
   While it does not affect simulation, it must divide `DEF_AIE_ROWS` and `DEF_AIE_COLS`.
   In practice, this means setting `DEF_PARTS=1` when running single-core simulations.
-- For large simulations, we can generate data using `--identity` to avoid overflow.
+- For large simulations, we can run `generate_gemm_data.py` with `--identity` to avoid overflow.
 
 For builds:
-- Related files: `parameters.hh`, `xsa.cfg`, `$SRC_DIR/CMakeLists.txt`
+- Related files: `parameters.hh`, `xsa.cfg`, local `CMakeLists.txt`
 - Undo any inlining changes to `gemm.hh` from the simulations.
 - For each configuration, use a different CMake source directory to avoid recompilation since later tables and figures can reuse each configuration's build.
 
 ### Table III
 
 We use a $(1, 1, 1)$ L1 and $(4, 4, 4)$ L2 iteration space for single-core simulations.
-For example, for `(AIE_M, AIE_K, AIE_N) = (16, 64, 16)`, 
-we use `(PL_M, PL_K, PL_N) = (4*16, 4*64, 4*16) = (64, 256, 64)`.
+For example, for the `(AIE_M, AIE_K, AIE_N) = (16, 64, 16)` configuration,
+we use `(PL_M, PL_K, PL_N) = (4*16, 4*64, 4*16) = (64, 256, 64)`:
 
 ```console
 # Estimated Time: ~5 minutes
@@ -56,17 +56,18 @@ and save each `aiesimulator_output` directory as they will be used for Figure 7.
 - MCSA: `src`, `gemm-aiesim`, `impl`, `sim-mcsa`
 - Ideal MCSA: `src-ideal`, `gemm-ideal-aiesim`, `impl`, `sim-ideal`
 
-The `parse_profile.py` script finds the `impl` section (only created for non-inlined functions) 
+The `parse_profile.py` script locates the section for the user-specified function,
 and prints the `PC`, `Instruction`, `Assembly`, `Exe-count`, and `Cycles` columns
 while keeping track of VMAC instructions (marked by `x`),
 executed cycle count (given by `Exe-count`),
 and total cycle count including stalls (given by `Cycles`).
+These sections exist only for functions that have not been inlined.
 
 - VMAC: Reported cycles from `parse_profile.py` on `profile_instr_25_4.txt`
 - Stall: Total cycle difference from `parse_profile.py` using `--no-stalls`
 - Zero: Manually parsed `VST` pipeline block
-- Forward: Manually parsed `VLD` and `VST` pipeline block after `ACQ` on $A$ and $B$
-- Flush: Manually parsed `VLD` and `VST` pipeline block after `VMAC` pipeline and `ACQ` on $C_{in}$ and $C_{out}$
+- Forward: Manually parsed `VLD` and `VST` pipeline block after `ACQ`s on $A$ and $B$
+- Flush: Manually parsed `VLD` and `VST` pipeline block after `ACQ`s on $C_{in}$ and $C_{out}$
 - Other: Remaining cycles
 
 We show an example using Traditional SA:
@@ -83,24 +84,24 @@ make -j VERBOSE=1 gemm-trad-aiesim
 ```
 
 We can calculate each of the reported values as follows:
-- VMAC: the last entry gives `131072/210846`, or $62.2%$.
-- Stall: the last entry gives `131072/175772`, or $(210846 - 175772) / 210846 = 16.6%$.
+- VMAC: the last entry gives `131072/210846`, or $62.2\%$.
+- Stall: the last entry gives `131072/175772`, or $(210846 - 175772) / 210846 = 16.6\%$.
 - Zero: we search for the first `VST` block corresponding to line 92 in `src-trad/gemm.cc` 
   and count the `Exe-count` cycles.  The VLIW instruction looks like: `NOP; VST wr3, [p6], #32`.
-  There are 32 lines of 8 cycles, or $(32\*8)/210846 = 0.1%$.
+  There are 32 lines of 8 cycles, or $(32\*8)/210846 = 0.1\%$.
 - Forward: in `src-trad/gemm.cc` we can see that we acquire `rin`, `rout`, `cin`, and `cout`,
   so we search for the first two `ACQ` instructions.
   The following `VLD` and `VST` pipeline block corresponds to the row-wise forwarding of $A$,
   and contain cycle count values of $64$ (prologue/epilogue) and $448$ (core pipeline) for a total of $8640$ cycles.
   We find the next two `ACQ` instructions for `cin` and `cout` to locate the next pipeline block for col-wise forwarding of $B$.
-  Both cycle counts for $A$ and $B$ are the same in this case, so our percentage is $(2\*8640)/210846=8.2%$.
+  Both cycle counts for $A$ and $B$ are the same in this case, so our percentage is $(2\*8640)/210846=8.2\%$.
 - Flush: following the logic in `gemm.cc`, the next pipeline block corresponds to `compute` with VMAC instructions.
   The `flush_step` occurs after this block and can be located by the next two `ACQ` instructions;
   there are 39 lines of 21 cycles. 
   The draining while-loop (find next two `ACQ`) has cycle counts of $0$ due to our flushing constraint $TK_2 \ge R$.
   The next single `ACQ` corresponds to writing the local buffer to `oout`; there are 40 lines of 8 cycles.
   The last two `ACQ` corresponds to the final drain at the end of execution; there are 39 lines of 3 cycles.
-  The final calculation is: $(39\*21 + 40\*8 + 39\*3) / 210846 = 0.6%$.
+  The final calculation is: $(39\*21 + 40\*8 + 39\*3) / 210846 = 0.6\%$.
 - Other: remaining cycle count/percentage.
 
 ### Figure 7
