@@ -13,6 +13,11 @@ For simulations:
   In practice, this means setting `DEF_PARTS=1` when running single-core simulations.
 - For large simulations, we can generate data using `--identity` to avoid overflow.
 
+For builds:
+- Related files: `parameters.hh`, `xsa.cfg`, `$SRC_DIR/CMakeLists.txt`
+- Undo any inlining changes to `gemm.hh` from the simulations.
+- For each configuration, use a different CMake source directory to avoid recompilation since later tables and figures can reuse each configuration's build.
+
 ### Table III
 
 We use a $(1, 1, 1)$ L1 and $(4, 4, 4)$ L2 iteration space for single-core simulations.
