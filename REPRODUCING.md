@@ -84,24 +84,24 @@ make -j VERBOSE=1 gemm-trad-aiesim
 ```
 
 We can calculate each of the reported values as follows:
-- VMAC: the last entry gives `131072/210846`, or $62.2$%.
-- Stall: the last entry gives `131072/175772`, or $(210846 - 175772) / 210846 = 16.6$%.
+- VMAC: the last entry gives `131072/210846`, or $`62.2%`$.
+- Stall: the last entry gives `131072/175772`, or $`(210846 - 175772) / 210846 = 16.6%`$.
 - Zero: we search for the first `VST` block corresponding to line 92 in `src-trad/gemm.cc` 
   and count the `Exe-count` cycles.  The VLIW instruction looks like: `NOP; VST wr3, [p6], #32`.
-  There are 32 lines of 8 cycles, or $(32\*8)/210846 = 0.1$%.
+  There are 32 lines of 8 cycles, or $`(32\*8)/210846 = 0.1%`$.
 - Forward: in `src-trad/gemm.cc` we can see that we acquire `rin`, `rout`, `cin`, and `cout`,
   so we search for the first two `ACQ` instructions.
   The following `VLD` and `VST` pipeline block corresponds to the row-wise forwarding of $A$,
   and contain cycle count values of $64$ (prologue/epilogue) and $448$ (core pipeline) for a total of $8640$ cycles.
   We find the next two `ACQ` instructions for `cin` and `cout` to locate the next pipeline block for col-wise forwarding of $B$.
-  Both cycle counts for $A$ and $B$ are the same in this case, so our percentage is $(2\*8640)/210846=8.2$%.
+  Both cycle counts for $A$ and $B$ are the same in this case, so our percentage is $`(2\*8640)/210846=8.2%`$.
 - Flush: following the logic in `gemm.cc`, the next pipeline block corresponds to `compute` with VMAC instructions.
   The `flush_step` occurs after this block and can be located by the next two `ACQ` instructions;
   there are 39 lines of 21 cycles. 
   The draining while-loop (find next two `ACQ`) has cycle counts of $0$ due to our flushing constraint $TK_2 \ge R$.
   The next single `ACQ` corresponds to writing the local buffer to `oout`; there are 40 lines of 8 cycles.
   The last two `ACQ` corresponds to the final drain at the end of execution; there are 39 lines of 3 cycles.
-  The final calculation is: $(39\*21 + 40\*8 + 39\*3) / 210846 = 0.6$%.
+  The final calculation is: $`(39\*21 + 40\*8 + 39\*3) / 210846 = 0.6%`$.
 - Other: remaining cycle count/percentage.
 
 ### Figure 7
